@@ -27,6 +27,7 @@
 
 // OpenGL Graphics includes
 #include <helper_gl.h>
+#include <nvToolsExt.h>
 
 #if defined(__APPLE__) || defined(MACOSX)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -120,15 +121,18 @@ extern "C" void updateVelocity(cData *v, float *vx, float *vy, int dx, int pdx,
 extern "C" void advectParticles(GLuint vbo, cData *v, int dx, int dy, float dt);
 
 void simulateFluids(void) {
+  nvtxRangePush(__FUNCTION__);
   // simulate fluid
   advectVelocity(dvfield, (float *)vxfield, (float *)vyfield, DIM, RPADW, DIM,
                  DT);
   diffuseProject(vxfield, vyfield, CPADW, DIM, DT, VIS);
   updateVelocity(dvfield, (float *)vxfield, (float *)vyfield, DIM, RPADW, DIM);
   advectParticles(vbo, dvfield, DIM, DIM, DT);
+  nvtxRangePop();
 }
 
 void display(void) {
+  nvtxRangePush(__FUNCTION__);
   if (!ref_file) {
     sdkStartTimer(&timer);
     simulateFluids();
@@ -153,6 +157,7 @@ void display(void) {
   glDisable(GL_TEXTURE_2D);
 
   if (ref_file) {
+    nvtxRangePop();
     return;
   }
 
@@ -171,7 +176,7 @@ void display(void) {
     fpsLimit = (int)MAX(ifps, 1.f);
     sdkResetTimer(&timer);
   }
-
+  nvtxRangePop();
   glutPostRedisplay();
 }
 
@@ -359,6 +364,9 @@ void cleanup(void) {
 }
 
 int initGL(int *argc, char **argv) {
+ 
+  
+  nvtxRangePush("Initialize");
   glutInit(argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
   glutInitWindowSize(wWidth, wHeight);
@@ -368,7 +376,8 @@ int initGL(int *argc, char **argv) {
   glutMouseFunc(click);
   glutMotionFunc(motion);
   glutReshapeFunc(reshape);
-
+  nvtxRangePop();
+  
   if (!isGLVersionSupported(1, 5)) {
     fprintf(stderr, "ERROR: Support for OpenGL 1.5 is missing");
     fflush(stderr);
